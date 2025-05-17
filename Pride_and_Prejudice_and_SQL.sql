@@ -105,7 +105,7 @@ VALUES
 INSERT INTO narrative_parts (plot_point)
 VALUES
 ('Background/Introduction'),
-('Crisis Point 1'), -- SPOILERS - Lydia Runs Away
-('Crisis Point 2'), -- Lydia's Marriage
+('Crisis Point 1'), -- SPOILERS - Jane's Dissapointment
+('Crisis Point 2'), -- Lydia Runs Away
 ('Plot Twist'), -- it was Darcy all along
 ('Happily Ever After'); -- speaks for itself
