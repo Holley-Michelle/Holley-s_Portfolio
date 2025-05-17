@@ -1,3 +1,5 @@
+-- The SQL below will create a custom database using SQL name 'pride_and_prejudice' the database will contain a total of four tables 1-character_demographics, 2- household_details, 3-income_or_dowry, and 4-narrative parts.--
+
 DROP DATABASE IF EXISTS `Pride_and_Prejudice_and_SQL`;
 CREATE DATABASE `Pride_and_Prejudice`;
 USE `Pride_and_Prejudice`;
