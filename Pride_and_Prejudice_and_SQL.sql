@@ -144,16 +144,16 @@ SET marital_status_at_end = CASE story_id
     ELSE marital_status_at_end
 END
 WHERE story_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
-#now I'll check and ensure that the column is populated
+--#now I'll check and ensure that the column is populated
 SELECT *
 FROM character_demographics;
 
-# that looks good now lets add some more infomation 
-#ALTER TABLE character_demographics
-#ADD spouse_name VARCHAR(100), # want to show spouses
-#ADD moved_household BOOLEAN; # want to see who moved 
+--# that looks good now lets add some more infomation 
+--#ALTER TABLE character_demographics
+--#ADD spouse_name VARCHAR(100), # want to show spouses
+--#ADD moved_household BOOLEAN; # want to see who moved 
 
-# on second thought it might make more sense to create a new table called life events
+--# on second thought it might make more sense to create a new table called life events
 CREATE TABLE life_events (
   event_id INT AUTO_INCREMENT PRIMARY KEY, #genrates the id for the event unique to each
   story_id INT NOT NULL, # this is more of a best practice since we created this table but tells us to essentially only look at items in any table with a story_id
@@ -163,7 +163,7 @@ CREATE TABLE life_events (
   FOREIGN KEY (story_id) REFERENCES character_demographics(story_id) #This enforces the relationship between this new table and the character_demographics table. 
 
 );
-#now the table is created lets add the data 
+--#now the table is created lets add the data 
 INSERT INTO life_events (story_id, spouse_name, moved_household, notes)
 VALUES
 (1, 'Fitzwilliam Darcy', TRUE, 'Moved to Pemberley after marriage.'),#remember Elizabeth Bennet is the character with a story_id of 1 and her evental spouse is Darcy
@@ -175,8 +175,8 @@ VALUES
 (7, 'Thomas Bennet', FALSE, 'Remains at Loungbourn.'),
 (8, 'William Collins', TRUE, 'Moved to Parsonage'),
 (11, 'Elizabeth Bennet', TRUE, 'Resides at Pemberley.');
-
-#now that we have these tables created and populated lets practice joining tables. Joining the character_demographics table to the life_events (join on story_id) will give us a "sparknotes" of the story. 
+  
+--#now that we have these tables created and populated lets practice joining tables. Joining the character_demographics table to the life_events (join on story_id) will give us a "sparknotes" of the story. 
 SELECT 
   c.first_name,
   c.last_name,
@@ -185,14 +185,15 @@ SELECT
   l.moved_household
 FROM character_demographics c
 LEFT JOIN life_events l ON c.story_id = l.story_id;
-# multiple events per character can lead to duplicate character rows in joins.
-# in this context, it's educational, but typically you'd deduplicate using GROUP BY or window functions which we will do in just a moment, if we want to see why we are seeing it this way though 
-#we can count the number of life event each character has you'll notice it matches the number of rows in the part above
+  
+--# multiple events per character can lead to duplicate character rows in joins.
+--# in this context, it's educational, but typically you'd deduplicate using GROUP BY or window functions which we will do in just a moment, if we want to see why we are seeing it this way though 
+--#we can count the number of life event each character has you'll notice it matches the number of rows in the part above
 SELECT story_id, COUNT(*) AS event_count
 FROM life_events
 GROUP BY story_id
 HAVING COUNT(*) > 1;
-#if we only want to show the 1 row per character we'd group or results using group by 
+--#if we only want to show the 1 row per character we'd group or results using group by 
 SELECT 
   c.first_name,
   c.last_name,
@@ -206,8 +207,8 @@ GROUP BY
   c.first_name, 
   c.last_name, 
   c.marital_status_at_end;
-#now lets practice some custom queires 
-#Return charcters who live at Netherfield 
+--#now lets practice some custom queires 
+--#Return charcters who live at Netherfield 
 SELECT c.first_name, c.last_name
 FROM character_demographics c
 JOIN income_or_dowry i ON c.story_id = i.story_id
@@ -223,4 +224,21 @@ FROM income_or_dowry i
 JOIN character_demographics c ON i.story_id = c.story_id
 ORDER BY i.income_or_dowry_amount DESC
 LIMIT 3;
-# that's all for oue SQL Overview - please try out some queries of your own! 
+--# that's all for oue SQL Overview - please try out some queries of your own! 
+--# for extra practice lets create a view 
+--#creating a view in SQL is like saving a custom query as a virtual table that we can reuse without having to duplicating data or rerunning custom joins every time.
+--#so next time we want to query this data set we can reference this view rather than having to redo or table joins. 
+CREATE VIEW character_summary AS
+SELECT 
+  c.story_id,
+  c.first_name,
+  c.last_name,
+  c.marital_status_at_end,
+  l.spouse_name,
+  l.moved_household,
+  h.household_name,
+  i.income_or_dowry_amount
+FROM character_demographics c
+LEFT JOIN life_events l ON c.story_id = l.story_id
+LEFT JOIN income_or_dowry i ON c.stocharacter_summaryry_id = i.story_id
+LEFT JOIN household_details h ON i.household_id = h.household_id;
