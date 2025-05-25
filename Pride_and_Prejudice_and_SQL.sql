@@ -223,3 +223,4 @@ FROM income_or_dowry i
 JOIN character_demographics c ON i.story_id = c.story_id
 ORDER BY i.income_or_dowry_amount DESC
 LIMIT 3;
+# that's all for oue SQL Overview - please try out some queries of your own! 
