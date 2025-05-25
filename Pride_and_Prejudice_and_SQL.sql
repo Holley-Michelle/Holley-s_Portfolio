@@ -27,13 +27,13 @@ CREATE TABLE income_or_dowry (
   story_id INT NOT NULL,
   first_name VARCHAR(50) NOT NULL,
   last_name VARCHAR(50) NOT NULL,
-  income_or_dowry INT,
+  income_or_dowry_amount INT,
   household_id INT NOT NULL,
   FOREIGN KEY (household_id) REFERENCES household_details(household_id),
   FOREIGN KEY (story_id) REFERENCES character_demographics(story_id)
 );
 
--- Narrative parts (for fun)
+-- Narrative parts
 CREATE TABLE narrative_parts (
   narrative_id INT NOT NULL AUTO_INCREMENT,
   plot_point VARCHAR(100),
@@ -78,7 +78,7 @@ VALUES
 ('Unknown');         -- ID 8
 
 -- Income/Dowry information
-INSERT INTO income_or_dowry (story_id, first_name, last_name, income_or_dowry, household_id)
+INSERT INTO income_or_dowry (story_id, first_name, last_name, income_or_dowry_amount, household_id)
 VALUES
 (1, 'Elizabeth', 'Bennet', 1000, 1),
 (2, 'Jane', 'Bennet', 1000, 1),
@@ -108,4 +108,118 @@ VALUES
 ('Crisis Point 1'), -- SPOILERS - Jane's Dissapointment
 ('Crisis Point 2'), -- Lydia Runs Away
 ('Plot Twist'), -- it was Darcy all along
-('Happily Ever After'); -- speaks for itself
+('Happily Ever After'); -- speaks for itself# In order to tell the whole stories there is some additional information that I need, I'll add it by adding columns to exsisting tables. 
+
+--#I'll start by looking at the table I want to work with 
+SELECT * 
+FROM character_demographics;
+
+#now I'll add the column I need. 
+ALTER TABLE character_demographics
+ADD marital_status_at_end VARCHAR(20);
+
+#now the column is there but not populated so I'll populate it. 
+UPDATE character_demographics
+SET marital_status_at_end = CASE story_id
+    WHEN 1 THEN 'Married'
+    WHEN 2 THEN 'Married'
+    WHEN 3 THEN 'Single'
+    WHEN 4 THEN 'Single'
+    WHEN 5 THEN 'Married'
+    WHEN 6 THEN 'Married'
+    WHEN 7 THEN 'Married'
+    WHEN 8 THEN 'Married'
+    WHEN 9 THEN 'Married'
+    WHEN 10 THEN 'Married'
+    WHEN 11 THEN 'Married'
+    WHEN 12 THEN 'Married'
+    WHEN 13 THEN 'Single'
+    WHEN 14 THEN 'Married'
+    WHEN 15 THEN 'Married'
+    WHEN 16 THEN 'Married'
+    WHEN 17 THEN 'Widowed'
+    WHEN 18 THEN 'Single'
+    WHEN 19 THEN 'Unknown'
+    WHEN 20 THEN 'Unknown'
+    ELSE marital_status_at_end
+END
+WHERE story_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+#now I'll check and ensure that the column is populated
+SELECT *
+FROM character_demographics;
+
+# that looks good now lets add some more infomation 
+#ALTER TABLE character_demographics
+#ADD spouse_name VARCHAR(100), # want to show spouses
+#ADD moved_household BOOLEAN; # want to see who moved 
+
+# on second thought it might make more sense to create a new table called life events
+CREATE TABLE life_events (
+  event_id INT AUTO_INCREMENT PRIMARY KEY, #genrates the id for the event unique to each
+  story_id INT NOT NULL, # this is more of a best practice since we created this table but tells us to essentially only look at items in any table with a story_id
+  spouse_name VARCHAR(100),
+  moved_household BOOLEAN, #booleans are true false statements, if the character did move then will return true and if not false
+  notes TEXT, #optional field if we leverage the database for visuals we may want to add some more character
+  FOREIGN KEY (story_id) REFERENCES character_demographics(story_id) #This enforces the relationship between this new table and the character_demographics table. 
+
+);
+#now the table is created lets add the data 
+INSERT INTO life_events (story_id, spouse_name, moved_household, notes)
+VALUES
+(1, 'Fitzwilliam Darcy', TRUE, 'Moved to Pemberley after marriage.'),#remember Elizabeth Bennet is the character with a story_id of 1 and her evental spouse is Darcy
+(2, 'Charles Bingley', TRUE, 'Relocated to a new estate.'),#Jane was character with story_id 2
+(3, NULL, FALSE, 'Remained single.'),
+(4, NULL, FALSE, 'Lived with family.'),
+(5, 'George Wickham', TRUE, 'Eloped; moved to the North.'),
+(6, 'Fanny Bennet', FALSE, 'Remained at Longbourn.'),
+(7, 'Thomas Bennet', FALSE, 'Remains at Loungbourn.'),
+(8, 'William Collins', TRUE, 'Moved to Parsonage'),
+(11, 'Elizabeth Bennet', TRUE, 'Resides at Pemberley.');
+
+#now that we have these tables created and populated lets practice joining tables. Joining the character_demographics table to the life_events (join on story_id) will give us a "sparknotes" of the story. 
+SELECT 
+  c.first_name,
+  c.last_name,
+  c.marital_status_at_end,
+  l.spouse_name,
+  l.moved_household
+FROM character_demographics c
+LEFT JOIN life_events l ON c.story_id = l.story_id;
+# multiple events per character can lead to duplicate character rows in joins.
+# in this context, it's educational, but typically you'd deduplicate using GROUP BY or window functions which we will do in just a moment, if we want to see why we are seeing it this way though 
+#we can count the number of life event each character has you'll notice it matches the number of rows in the part above
+SELECT story_id, COUNT(*) AS event_count
+FROM life_events
+GROUP BY story_id
+HAVING COUNT(*) > 1;
+#if we only want to show the 1 row per character we'd group or results using group by 
+SELECT 
+  c.first_name,
+  c.last_name,
+  c.marital_status_at_end,
+  MAX(l.spouse_name) AS spouse_name, # max is an aggregate funtion whose function is clearer when dealing with numbers but since this variable is text is just forcing a 'pick 1'
+  MAX(l.moved_household) AS moved_household
+FROM character_demographics c
+LEFT JOIN life_events l ON c.story_id = l.story_id
+GROUP BY 
+  c.story_id, 
+  c.first_name, 
+  c.last_name, 
+  c.marital_status_at_end;
+#now lets practice some custom queires 
+#Return charcters who live at Netherfield 
+SELECT c.first_name, c.last_name
+FROM character_demographics c
+JOIN income_or_dowry i ON c.story_id = i.story_id
+JOIN household_details h ON i.household_id = h.household_id
+WHERE h.household_name = 'Netherfield';
+
+--#Return the top 3 wealthiest characters in the narrative (remember only at the begining of the story since we're only looking at the tables and demographics without the narrative parts) 
+SELECT 
+  c.first_name,
+  c.last_name,
+  i.income_or_dowry_amount
+FROM income_or_dowry i
+JOIN character_demographics c ON i.story_id = c.story_id
+ORDER BY i.income_or_dowry_amount DESC
+LIMIT 3;
